@@ -4,7 +4,8 @@ FROM ruby:3.2.0
 RUN apt-get update -qq && apt-get install -y \
     build-essential \
     default-libmysqlclient-dev \
-    curl
+    curl \
+    vim
 
 # Node.jsとyarnのバージョンを明示的に指定
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
