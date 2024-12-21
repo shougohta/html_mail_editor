@@ -12,48 +12,69 @@
         <div class="preview-content" v-html="previewHtml"></div>
       </section>
 
+      <!-- メールコンテンツ入力エリア -->
+      <section class="text-input-section">
+        <h2>メールコンテンツ入力</h2>
+        <textarea
+          v-model="text"
+          class="text-input"
+          placeholder="メール内容を入力してください"
+        ></textarea>
+        <button @click="convertToHtml" class="action-button">適用</button>
+      </section>
+
+      <!-- 修正内容会話形式エリア -->
+      <section class="chat-section">
+        <h2>AIとの会話で修正</h2>
+        <div class="chat-display">
+          <div v-for="(message, index) in chatMessages" :key="index" class="chat-message">
+            <div :class="message.sender === 'user' ? 'user-message-container' : 'ai-message-container'">
+              <span :class="message.sender === 'user' ? 'user-name' : 'ai-name'">
+                {{ message.sender === 'user' ? 'ユーザー' : 'AIチャットくん' }}
+              </span>
+              <div :class="message.sender === 'user' ? 'user-message' : 'ai-message'">
+                <p>{{ message.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input">
+          <textarea
+            v-model="userMessage"
+            class="text-input"
+            placeholder="修正指示を入力してください"
+          ></textarea>
+          <button @click="sendChatMessage" class="action-button">送信</button>
+        </div>
+      </section>
+
       <!-- HTMLコードエリア -->
       <section class="html-section">
         <h2>HTMLコード</h2>
         <pre class="html-output">{{ previewHtml }}</pre>
       </section>
 
-      <!-- 文言エリア -->
-      <section class="text-section">
-        <div class="text-inputs">
-          <div>
-            <h3>メールコンテンツ入力</h3>
-            <textarea
-              v-model="text"
-              class="text-input"
-              placeholder="メール内容を入力してください"
-            ></textarea>
-            <button @click="convertToHtml" class="action-button">HTML生成</button>
-          </div>
-
-          <div>
-            <h3>修正内容入力</h3>
-            <textarea
-              v-model="editText"
-              class="text-input"
-              placeholder="修正内容を記載してください"
-            ></textarea>
-            <button @click="submitEdit" class="action-button">修正内容を送信</button>
-          </div>
-        </div>
-      </section>
     </main>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, onMounted } from "vue";
 
 export default defineComponent({
   setup() {
     const text = ref<string>("");
     const previewHtml = ref<string>("");
-    const editText = ref<string>("");
+    const userMessage = ref<string>("");
+    const chatMessages = ref<{ sender: string; text: string }[]>([]);
+
+    // デフォルトメッセージの設定
+    onMounted(() => {
+      chatMessages.value.push({
+        sender: "ai",
+        text: "修正内容を入力してください。",
+      });
+    });
 
     const convertToHtml = async () => {
       const response = await fetch("http://localhost:3000/mails/convert", {
@@ -68,11 +89,23 @@ export default defineComponent({
       }
     };
 
-    const submitEdit = () => {
-      alert(`修正内容: ${editText.value}`); // 仮実装
+    const sendChatMessage = async () => {
+      if (!userMessage.value.trim()) return;
+
+      // Add user message to chat
+      chatMessages.value.push({ sender: "user", text: userMessage.value });
+
+      // Simulate AI response
+      chatMessages.value.push({
+        sender: "ai",
+        text: `修正内容を反映しました: 「${userMessage.value}」`,
+      });
+
+      // Clear user input
+      userMessage.value = "";
     };
 
-    return { text, previewHtml, editText, convertToHtml, submitEdit };
+    return { text, previewHtml, userMessage, chatMessages, convertToHtml, sendChatMessage };
   },
 });
 </script>
@@ -98,60 +131,12 @@ export default defineComponent({
   padding-bottom: 1rem;
 }
 
-.app-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-/* プレビュー表示エリア */
-.preview-section {
+/* メールコンテンツ入力エリア */
+.text-input-section {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1rem;
   background-color: #f9f9f9;
-}
-
-.preview-content {
-  background-color: #fff;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* HTMLコードエリア */
-.html-section {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  background-color: #f9f9f9;
-}
-
-.html-output {
-  background-color: #fff;
-  padding: 1rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-x: auto;
-}
-
-/* 文言エリア */
-.text-section {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  background-color: #f9f9f9;
-}
-
-.text-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .text-input {
@@ -178,5 +163,96 @@ export default defineComponent({
 
 .action-button:hover {
   background-color: #005bb5;
+}
+
+/* プレビュー表示エリア */
+.preview-section,
+.html-section {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #f9f9f9;
+}
+
+.preview-content,
+.html-output {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.html-output {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* 修正内容会話形式エリア */
+.chat-section {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #f9f9f9;
+}
+
+.chat-display {
+  max-height: 1000px;
+  height: 500px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.chat-message {
+  margin-bottom: 1rem;
+}
+
+.user-message-container,
+.ai-message-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-name {
+  text-align: right;
+  font-weight: bold;
+  color: #007aff;
+}
+
+.ai-name {
+  text-align: left;
+  font-weight: bold;
+  color: #333;
+}
+
+.user-message {
+  text-align: right;
+  color: #007aff;
+  background-color: #e6f7ff;
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.ai-message {
+  text-align: left;
+  color: #333;
+  background-color: #f1f1f1;
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
 }
 </style>
