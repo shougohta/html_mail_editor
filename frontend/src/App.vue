@@ -77,7 +77,7 @@ export default defineComponent({
     });
 
     const convertToHtml = async () => {
-      const response = await fetch("http://localhost:3000/mails/convert", {
+      const response = await fetch("http://localhost:3000/mails/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: text.value }),
