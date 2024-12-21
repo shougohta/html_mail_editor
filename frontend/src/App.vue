@@ -9,7 +9,10 @@
       <!-- プレビュー表示エリア -->
       <section class="preview-section">
         <h2>プレビュー表示</h2>
-        <div class="preview-content" v-html="previewHtml"></div>
+        <iframe
+          class="preview-iframe"
+          ref="previewIframe"
+        ></iframe>
       </section>
 
       <!-- メールコンテンツ入力エリア -->
@@ -27,7 +30,11 @@
       <section class="chat-section">
         <h2>AIとの会話で修正</h2>
         <div class="chat-display">
-          <div v-for="(message, index) in chatMessages" :key="index" class="chat-message">
+          <div
+            v-for="(message, index) in chatMessages"
+            :key="index"
+            class="chat-message"
+          >
             <div :class="message.sender === 'user' ? 'user-message-container' : 'ai-message-container'">
               <span :class="message.sender === 'user' ? 'user-name' : 'ai-name'">
                 {{ message.sender === 'user' ? 'ユーザー' : 'AIチャットくん' }}
@@ -53,7 +60,6 @@
         <h2>HTMLコード</h2>
         <pre class="html-output">{{ previewHtml }}</pre>
       </section>
-
     </main>
   </div>
 </template>
@@ -67,6 +73,7 @@ export default defineComponent({
     const previewHtml = ref<string>("");
     const userMessage = ref<string>("");
     const chatMessages = ref<{ sender: string; text: string }[]>([]);
+    const previewIframe = ref<HTMLIFrameElement | null>(null);
 
     // デフォルトメッセージの設定
     onMounted(() => {
@@ -75,6 +82,17 @@ export default defineComponent({
         text: "修正内容を入力してください。",
       });
     });
+
+    const updatePreview = () => {
+      if (previewIframe.value) {
+        const iframeDocument = previewIframe.value.contentDocument;
+        if (iframeDocument) {
+          iframeDocument.open();
+          iframeDocument.write(previewHtml.value);
+          iframeDocument.close();
+        }
+      }
+    };
 
     const convertToHtml = async () => {
       const response = await fetch("http://localhost:3000/mails/create", {
@@ -86,6 +104,7 @@ export default defineComponent({
       if (response.ok) {
         const data = await response.json();
         previewHtml.value = data.html;
+        updatePreview(); // プレビューエリアを更新
       }
     };
 
@@ -105,7 +124,7 @@ export default defineComponent({
       userMessage.value = "";
     };
 
-    return { text, previewHtml, userMessage, chatMessages, convertToHtml, sendChatMessage };
+    return { text, previewHtml, userMessage, chatMessages, convertToHtml, sendChatMessage, previewIframe };
   },
 });
 </script>
@@ -174,13 +193,12 @@ export default defineComponent({
   background-color: #f9f9f9;
 }
 
-.preview-content,
-.html-output {
-  background-color: #fff;
-  padding: 1rem;
+.preview-iframe {
+  width: 100%;
+  height: 400px;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  border: 1px solid #eee;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 
 .html-output {

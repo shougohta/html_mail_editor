@@ -11,11 +11,18 @@ module External
       api_key = Rails.application.credentials.chatgpt_api_key
       client = OpenAI::Client.new(access_token: api_key)
 
+      context = "テキストをHTML形式のメールに変換してください。表や記号、デザインを入れてください。"
+
+
+      params = ["クール", "シンプル", "わかりやすい", "鮮やか"]
+      prompt = params.join("、") + "なデザインにしてください"
+
       response = client.chat(
         parameters: {
           model: "gpt-3.5-turbo",
           messages: [
-            { role: "system", content: "Convert the following text into HTML format for an email." },
+            { role: "system", content: context },
+            { role: "system", content: prompt },
             { role: "user", content: text }
           ]
         }
